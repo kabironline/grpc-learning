@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HelloServiceClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
-	SayManyHellos(ctx context.Context, opts ...grpc.CallOption) (HelloService_SayManyHellosClient, error)
+	SayManyHellos(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (HelloService_SayManyHellosClient, error)
 }
 
 type helloServiceClient struct {
@@ -48,27 +48,28 @@ func (c *helloServiceClient) SayHello(ctx context.Context, in *HelloRequest, opt
 	return out, nil
 }
 
-func (c *helloServiceClient) SayManyHellos(ctx context.Context, opts ...grpc.CallOption) (HelloService_SayManyHellosClient, error) {
+func (c *helloServiceClient) SayManyHellos(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (HelloService_SayManyHellosClient, error) {
 	stream, err := c.cc.NewStream(ctx, &HelloService_ServiceDesc.Streams[0], HelloService_SayManyHellos_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &helloServiceSayManyHellosClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type HelloService_SayManyHellosClient interface {
-	Send(*HelloRequest) error
 	Recv() (*HelloResponse, error)
 	grpc.ClientStream
 }
 
 type helloServiceSayManyHellosClient struct {
 	grpc.ClientStream
-}
-
-func (x *helloServiceSayManyHellosClient) Send(m *HelloRequest) error {
-	return x.ClientStream.SendMsg(m)
 }
 
 func (x *helloServiceSayManyHellosClient) Recv() (*HelloResponse, error) {
@@ -84,7 +85,7 @@ func (x *helloServiceSayManyHellosClient) Recv() (*HelloResponse, error) {
 // for forward compatibility
 type HelloServiceServer interface {
 	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
-	SayManyHellos(HelloService_SayManyHellosServer) error
+	SayManyHellos(*HelloRequest, HelloService_SayManyHellosServer) error
 	mustEmbedUnimplementedHelloServiceServer()
 }
 
@@ -95,7 +96,7 @@ type UnimplementedHelloServiceServer struct {
 func (UnimplementedHelloServiceServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
 }
-func (UnimplementedHelloServiceServer) SayManyHellos(HelloService_SayManyHellosServer) error {
+func (UnimplementedHelloServiceServer) SayManyHellos(*HelloRequest, HelloService_SayManyHellosServer) error {
 	return status.Errorf(codes.Unimplemented, "method SayManyHellos not implemented")
 }
 func (UnimplementedHelloServiceServer) mustEmbedUnimplementedHelloServiceServer() {}
@@ -130,12 +131,15 @@ func _HelloService_SayHello_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _HelloService_SayManyHellos_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HelloServiceServer).SayManyHellos(&helloServiceSayManyHellosServer{stream})
+	m := new(HelloRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HelloServiceServer).SayManyHellos(m, &helloServiceSayManyHellosServer{stream})
 }
 
 type HelloService_SayManyHellosServer interface {
 	Send(*HelloResponse) error
-	Recv() (*HelloRequest, error)
 	grpc.ServerStream
 }
 
@@ -145,14 +149,6 @@ type helloServiceSayManyHellosServer struct {
 
 func (x *helloServiceSayManyHellosServer) Send(m *HelloResponse) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func (x *helloServiceSayManyHellosServer) Recv() (*HelloRequest, error) {
-	m := new(HelloRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 // HelloService_ServiceDesc is the grpc.ServiceDesc for HelloService service.
@@ -172,7 +168,6 @@ var HelloService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "SayManyHellos",
 			Handler:       _HelloService_SayManyHellos_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "proto/hello/hello.proto",

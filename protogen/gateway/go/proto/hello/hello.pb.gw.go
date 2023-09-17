@@ -67,46 +67,28 @@ func local_request_HelloService_SayHello_0(ctx context.Context, marshaler runtim
 }
 
 func request_HelloService_SayManyHellos_0(ctx context.Context, marshaler runtime.Marshaler, client extHello.HelloServiceClient, req *http.Request, pathParams map[string]string) (extHello.HelloService_SayManyHellosClient, runtime.ServerMetadata, error) {
+	var protoReq extHello.HelloRequest
 	var metadata runtime.ServerMetadata
-	stream, err := client.SayManyHellos(ctx)
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.SayManyHellos(ctx, &protoReq)
 	if err != nil {
-		grpclog.Infof("Failed to start streaming: %v", err)
 		return nil, metadata, err
 	}
-	dec := marshaler.NewDecoder(req.Body)
-	handleSend := func() error {
-		var protoReq extHello.HelloRequest
-		err := dec.Decode(&protoReq)
-		if err == io.EOF {
-			return err
-		}
-		if err != nil {
-			grpclog.Infof("Failed to decode request: %v", err)
-			return err
-		}
-		if err := stream.Send(&protoReq); err != nil {
-			grpclog.Infof("Failed to send request: %v", err)
-			return err
-		}
-		return nil
-	}
-	go func() {
-		for {
-			if err := handleSend(); err != nil {
-				break
-			}
-		}
-		if err := stream.CloseSend(); err != nil {
-			grpclog.Infof("Failed to terminate client stream: %v", err)
-		}
-	}()
 	header, err := stream.Header()
 	if err != nil {
-		grpclog.Infof("Failed to get header from client: %v", err)
 		return nil, metadata, err
 	}
 	metadata.HeaderMD = header
 	return stream, metadata, nil
+
 }
 
 // RegisterHelloServiceHandlerServer registers the http handlers for service HelloService to "mux".
