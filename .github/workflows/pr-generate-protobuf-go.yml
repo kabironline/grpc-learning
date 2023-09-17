@@ -2,6 +2,9 @@ name: Pull Request - Check Protobuf - Go
 
 on:
   pull_request:
+    branches:
+      - "master"
+      - "main"
     paths:
       - 'proto/**.proto'
 

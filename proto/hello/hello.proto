@@ -13,7 +13,8 @@ message HelloResponse {
   string greet = 1;
 }
 
-
 service HelloService {
   rpc SayHello (HelloRequest) returns (HelloResponse) {}
+
+  rpc SayManyHellos (stream HelloRequest) returns (stream HelloResponse) {}
 }
