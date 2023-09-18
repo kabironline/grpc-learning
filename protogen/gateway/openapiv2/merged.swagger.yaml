@@ -4,11 +4,32 @@ info:
   version: version not set
 tags:
   - name: HelloService
+  - name: BankService
 consumes:
   - application/json
 produces:
   - application/json
 paths:
+  /BankService/GetCurrentBalance:
+    post:
+      operationId: BankService_GetCurrentBalance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/CurrentBalanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/CurrentBalanceRequest'
+      tags:
+        - BankService
   /hello.HelloService/SayHello:
     post:
       operationId: HelloService_SayHello
@@ -104,6 +125,19 @@ paths:
       tags:
         - HelloService
 definitions:
+  CurrentBalanceRequest:
+    type: object
+    properties:
+      account_number:
+        type: string
+  CurrentBalanceResponse:
+    type: object
+    properties:
+      amount:
+        type: integer
+        format: int32
+      current_date:
+        $ref: '#/definitions/typeDate'
   helloHelloRequest:
     type: object
     properties:
@@ -136,3 +170,39 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
+  typeDate:
+    type: object
+    properties:
+      year:
+        type: integer
+        format: int32
+        description: |-
+          Year of the date. Must be from 1 to 9999, or 0 to specify a date without
+          a year.
+      month:
+        type: integer
+        format: int32
+        description: |-
+          Month of a year. Must be from 1 to 12, or 0 to specify a year without a
+          month and day.
+      day:
+        type: integer
+        format: int32
+        description: |-
+          Day of a month. Must be from 1 to 31 and valid for the year and month, or 0
+          to specify a year by itself or a year and month where the day isn't
+          significant.
+    description: |-
+      * A full date, with non-zero year, month, and day values
+      * A month and day value, with a zero year, such as an anniversary
+      * A year on its own, with zero month and day values
+      * A year and month value, with a zero day, such as a credit card expiration
+      date
+
+      Related types are [google.type.TimeOfDay][google.type.TimeOfDay] and
+      `google.protobuf.Timestamp`.
+    title: |-
+      Represents a whole or partial calendar date, such as a birthday. The time of
+      day and time zone are either specified elsewhere or are insignificant. The
+      date is relative to the Gregorian Calendar. This can represent one of the
+      following:
