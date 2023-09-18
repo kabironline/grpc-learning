@@ -4,7 +4,8 @@ import "proto/bank/type/account.proto";
 
 option go_package = "github.com/kabironline/grpc-learning/protogen/go/bank";
 
+
 service BankService {
-  rpc GetCurrentBalance( CurrentBalanceRequest)
-    returns (CurrentBalanceResponse) {}
+  rpc GetCurrentBalance(CurrentBalanceRequest)
+   returns (CurrentBalanceResponse) {}
 }
