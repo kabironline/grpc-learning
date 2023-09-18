@@ -134,8 +134,8 @@ definitions:
     type: object
     properties:
       amount:
-        type: integer
-        format: int32
+        type: number
+        format: double
       current_date:
         $ref: '#/definitions/typeDate'
   helloHelloRequest:
