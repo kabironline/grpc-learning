@@ -10,14 +10,20 @@ consumes:
 produces:
   - application/json
 paths:
-  /BankService/GetCurrentBalance:
+  /bank.BankService/FetchExchangeRates:
     post:
-      operationId: BankService_GetCurrentBalance
+      operationId: BankService_FetchExchangeRates
       responses:
         "200":
-          description: A successful response.
+          description: A successful response.(streaming responses)
           schema:
-            $ref: '#/definitions/CurrentBalanceResponse'
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/bankExchangeRateResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of bankExchangeRateResponse
         default:
           description: An unexpected error response.
           schema:
@@ -27,7 +33,27 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/CurrentBalanceRequest'
+            $ref: '#/definitions/bankExchangeRateRequest'
+      tags:
+        - BankService
+  /bank.BankService/GetCurrentBalance:
+    post:
+      operationId: BankService_GetCurrentBalance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/bankCurrentBalanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/bankCurrentBalanceRequest'
       tags:
         - BankService
   /hello.HelloService/SayHello:
@@ -125,12 +151,12 @@ paths:
       tags:
         - HelloService
 definitions:
-  CurrentBalanceRequest:
+  bankCurrentBalanceRequest:
     type: object
     properties:
       account_number:
         type: string
-  CurrentBalanceResponse:
+  bankCurrentBalanceResponse:
     type: object
     properties:
       amount:
@@ -138,6 +164,25 @@ definitions:
         format: double
       current_date:
         $ref: '#/definitions/typeDate'
+  bankExchangeRateRequest:
+    type: object
+    properties:
+      from_currency:
+        type: string
+      to_currency:
+        type: string
+  bankExchangeRateResponse:
+    type: object
+    properties:
+      from_currency:
+        type: string
+      to_currency:
+        type: string
+      rate:
+        type: number
+        format: double
+      timestamp:
+        type: string
   helloHelloRequest:
     type: object
     properties:
