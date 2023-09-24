@@ -6,6 +6,8 @@ clean:
 ifeq ($(OS), Windows_NT)
 	if exist "protogen" rd /s /q protogen
 	mkdir protogen\go
+	if exist "protogen\js" rd /s /q protogen\js
+	mkdir protogen\js
 else
 	rm -fR ./protogen
 	mkdir -p ./protogen/go
@@ -17,11 +19,18 @@ protoc-go:
 	protoc --go_opt=module=${GO_MODULE} --go_out=. \
 	--go-grpc_opt=module=${GO_MODULE} --go-grpc_out=. \
 	./proto/hello/*.proto ./proto/payment/*.proto ./proto/transaction/*.proto \
-	./proto/bank/*.proto ./proto/bank/type/*.proto
+	./proto/bank/*.proto ./proto/bank/type/*.proto \
 
+
+.PHONY: protoc-js
+protoc-js:
+	protoc --js_out=import_style=commonjs,binary:./protogen/js \
+	--grpc-web_out=import_style=commonjs,mode=grpcwebtext:./protogen/js \
+	./proto/hello/*.proto ./proto/payment/*.proto ./proto/transaction/*.proto \
+	./proto/bank/*.proto ./proto/bank/type/*.proto \
 
 .PHONY: build
-build: clean protoc-go
+build: clean protoc-go protoc-js
 
 
 .PHONY: pipeline-init
